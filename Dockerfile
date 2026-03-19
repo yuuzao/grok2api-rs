@@ -28,7 +28,7 @@ WORKDIR /app
 ARG VCS_REF=unknown
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates tzdata \
+    && apt-get install -y --no-install-recommends ca-certificates tzdata gosu \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 10001 appuser
 
@@ -40,7 +40,6 @@ RUN chmod +x /app/grok2api-rs /app/entrypoint.sh \
     && mkdir -p /app/data \
     && chown -R appuser:appuser /app
 
-USER appuser
 EXPOSE 8000
 
 ENV SERVER_HOST=0.0.0.0 \
