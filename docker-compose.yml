@@ -14,4 +14,7 @@ services:
       API_KEY: ${API_KEY:-}
       RUST_LOG: ${RUST_LOG:-info}
     volumes:
-      - ./data:/app/data
+      - grok2api_data:/app/data
+
+volumes:
+  grok2api_data:
