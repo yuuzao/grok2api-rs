@@ -1,0 +1,15 @@
+/target/
+
+/data/
+!/data/token.json.example
+
+.env
+.env.*
+
+.DS_Store
+Thumbs.db
+
+.idea/
+.vscode/
+*.swp
+*.swo
