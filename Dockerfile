@@ -3,6 +3,8 @@
 FROM rust:1-bookworm AS builder
 WORKDIR /src
 
+ARG VCS_REF=unknown
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
        build-essential \
@@ -23,6 +25,8 @@ RUN LIBCLANG_PATH="$(llvm-config --libdir)" cargo build --release \
 FROM debian:bookworm-slim AS runtime
 WORKDIR /app
 
+ARG VCS_REF=unknown
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends ca-certificates tzdata \
     && rm -rf /var/lib/apt/lists/* \
@@ -40,7 +44,10 @@ USER appuser
 EXPOSE 8000
 
 ENV SERVER_HOST=0.0.0.0 \
-    SERVER_PORT=8000
+    SERVER_PORT=8000 \
+    APP_COMMIT_SHA=${VCS_REF}
+
+LABEL org.opencontainers.image.revision="${VCS_REF}"
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["/app/grok2api-rs"]

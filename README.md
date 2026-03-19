@@ -96,25 +96,37 @@ docker build -t grok2api-rs:local .
 IMAGE=grok2api-rs:local docker compose up -d
 ```
 
-### 3) 使用最新镜像升级
+### 3) 使用 Makefile 构建与推送镜像
 
 ```bash
-docker pull ghcr.io/xeanyu/grok2api-rs:latest
+make build
+make push
+```
+
+可选参数：
+
+- `IMAGE`：镜像名，默认 `yuuzao/grok2api-rs`
+- `TAG`：镜像标签，默认 `latest`
+- `PLATFORMS`：推送平台，默认 `linux/amd64,linux/arm64`
+
+示例：
+
+```bash
+make build IMAGE=yuuzao/grok2api-rs TAG=dev
+make push IMAGE=yuuzao/grok2api-rs TAG=latest
+```
+
+### 4) 使用最新镜像升级
+
+```bash
+docker pull yuuzao/grok2api-rs:latest
 ```
 ```bash
 docker run -d \
   --name grok2api \
   -p 8000:8000 \
-  ghcr.io/xeanyu/grok2api-rs:latest
+  yuuzao/grok2api-rs:latest
 ```
-
-### 4) GitHub Actions 自动发布镜像
-
-仓库已包含 `.github/workflows/docker-publish.yml`：
-
-- push 到 `main`：发布 `ghcr.io/xeanyu/grok2api-rs:latest`
-- push tag（例如 `v0.2.0`）：发布 `ghcr.io/xeanyu/grok2api-rs:v0.2.0` 等同名 tag 镜像
-- 多架构：`linux/amd64` + `linux/arm64`
 
 ## 编译
 
@@ -197,6 +209,7 @@ enable_files = true
 
 - `app.api_key`：下游调用的 Bearer Token（留空表示不校验）。
 - `app.app_key`：后台登录密码。
+- `APP_URL` / `APP_KEY` / `API_KEY`：可通过环境变量覆盖 `app.app_url` / `app.app_key` / `app.api_key`，且环境变量优先。
 - `app.image_format`：默认图片返回格式（`url` / `base64`）。若请求传了 `response_format`，以请求参数为准。
 - `grok.wreq_emulation*`：上游浏览器指纹模板，可全局/Usage/NSFW 分开配置。
 - `grok.base_proxy_url` / `grok.asset_proxy_url`：可选代理地址。

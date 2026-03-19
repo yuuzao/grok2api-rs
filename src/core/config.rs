@@ -50,7 +50,7 @@ impl Config {
             config_data = local.load_config().await.ok();
         }
         let config_data = config_data.unwrap_or(JsonValue::Object(Default::default()));
-        let merged = deep_merge(&defaults, &config_data);
+        let merged = apply_env_overrides(deep_merge(&defaults, &config_data));
 
         let should_persist = !from_remote || merged != config_data;
         if should_persist {
@@ -76,7 +76,7 @@ impl Config {
             .unwrap_or(JsonValue::Object(Default::default()));
         let current = self.inner.read().await.clone();
         let base = deep_merge(&defaults, &current);
-        let merged = deep_merge(&base, new_config);
+        let merged = apply_env_overrides(deep_merge(&base, new_config));
         let storage = get_storage();
         storage
             .with_lock("config_save", 10, || async {
@@ -161,6 +161,73 @@ fn deep_merge(base: &JsonValue, override_value: &JsonValue) -> JsonValue {
     }
 }
 
+fn apply_env_overrides(config: JsonValue) -> JsonValue {
+    let overrides = [
+        ("APP_URL", "app.app_url"),
+        ("APP_KEY", "app.app_key"),
+        ("API_KEY", "app.api_key"),
+    ];
+    let mut result = config;
+    for (env_key, config_key) in overrides {
+        match std::env::var(env_key) {
+            Ok(value) => {
+                tracing::info!(
+                    env_key,
+                    config_key,
+                    "Applying config override from environment"
+                );
+                set_value(&mut result, config_key, JsonValue::String(value));
+            }
+            Err(std::env::VarError::NotPresent) => {}
+            Err(err) => {
+                tracing::warn!(
+                    env_key,
+                    config_key,
+                    error = %err,
+                    "Failed to read environment override"
+                );
+            }
+        }
+    }
+    result
+}
+
+fn set_value(config: &mut JsonValue, key: &str, value: JsonValue) {
+    let mut iter = key.split('.');
+    let section = match iter.next() {
+        Some(section) => section,
+        None => return,
+    };
+    let field = match iter.next() {
+        Some(field) => field,
+        None => {
+            if let JsonValue::Object(map) = config {
+                map.insert(section.to_string(), value);
+            }
+            return;
+        }
+    };
+
+    if !config.is_object() {
+        *config = JsonValue::Object(Default::default());
+    }
+
+    let JsonValue::Object(root) = config else {
+        return;
+    };
+
+    let entry = root
+        .entry(section.to_string())
+        .or_insert_with(|| JsonValue::Object(Default::default()));
+    if !entry.is_object() {
+        *entry = JsonValue::Object(Default::default());
+    }
+
+    if let JsonValue::Object(section_map) = entry {
+        section_map.insert(field.to_string(), value);
+    }
+}
+
 fn load_defaults() -> Option<JsonValue> {
     let path = project_root().join("config.defaults.toml");
     if !path.exists() {
@@ -220,4 +287,46 @@ fn json_to_toml(value: &JsonValue) -> toml::Value {
 
 pub fn config_to_toml(value: &JsonValue) -> toml::Value {
     json_to_toml(value)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{apply_env_overrides, get_value};
+    use serde_json::json;
+
+    #[test]
+    fn env_overrides_take_priority_for_app_fields() {
+        unsafe {
+            std::env::set_var("APP_URL", "https://example.com");
+            std::env::set_var("APP_KEY", "admin-secret");
+            std::env::set_var("API_KEY", "api-secret");
+        }
+
+        let merged = apply_env_overrides(json!({
+            "app": {
+                "app_url": "http://127.0.0.1:8000",
+                "app_key": "local-admin",
+                "api_key": "local-api"
+            }
+        }));
+
+        assert_eq!(
+            get_value(&merged, "app.app_url").and_then(|v| v.as_str().map(str::to_string)),
+            Some("https://example.com".to_string())
+        );
+        assert_eq!(
+            get_value(&merged, "app.app_key").and_then(|v| v.as_str().map(str::to_string)),
+            Some("admin-secret".to_string())
+        );
+        assert_eq!(
+            get_value(&merged, "app.api_key").and_then(|v| v.as_str().map(str::to_string)),
+            Some("api-secret".to_string())
+        );
+
+        unsafe {
+            std::env::remove_var("APP_URL");
+            std::env::remove_var("APP_KEY");
+            std::env::remove_var("API_KEY");
+        }
+    }
 }

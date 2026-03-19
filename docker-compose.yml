@@ -1,6 +1,6 @@
 services:
   grok2api-rs:
-    image: ${IMAGE:-ghcr.io/xeanyu/grok2api-rs:latest}
+    image: ${IMAGE:-yuuzao/grok2api-rs:latest}
     container_name: grok2api-rs
     restart: unless-stopped
     ports:
@@ -8,6 +8,9 @@ services:
     environment:
       SERVER_HOST: 0.0.0.0
       SERVER_PORT: 8000
+      APP_URL: ${APP_URL:-http://127.0.0.1:${SERVER_PORT:-8000}}
+      APP_KEY: ${APP_KEY:-grok2api}
+      API_KEY: ${API_KEY:-}
       RUST_LOG: ${RUST_LOG:-info}
     volumes:
       - ./data:/app/data
