@@ -73,8 +73,8 @@ impl ModelService {
             ),
             ModelInfo::new(
                 "grok-4.1-fast",
-                "grok-4-1-thinking-1129",
-                "MODEL_MODE_FAST",
+                "grok-4-1-fast-reasoning",
+                "MODEL_MODE_AUTO",
                 "Grok 4.1 Fast",
             ),
             {
@@ -89,7 +89,7 @@ impl ModelService {
             },
             ModelInfo::new(
                 "grok-4.2-beta",
-                "grok-4-2-beta",
+                "grok-4.20-beta",
                 "MODEL_MODE_AUTO",
                 "Grok 4.2 Beta",
             ),
