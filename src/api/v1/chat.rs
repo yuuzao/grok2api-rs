@@ -42,15 +42,6 @@ pub fn router() -> Router {
 }
 
 fn validate_request(req: &ChatCompletionRequest) -> Result<(), ApiError> {
-    if !ModelService::valid(&req.model) {
-        return Err(ApiError::not_found(format!(
-            "The model `{}` does not exist or you do not have access to it.",
-            req.model
-        ))
-        .with_param("model")
-        .with_code("model_not_found"));
-    }
-
     for (idx, msg) in req.messages.iter().enumerate() {
         let role = msg.get("role").and_then(|v| v.as_str()).unwrap_or("");
         if !VALID_ROLES.contains(&role) {
@@ -171,8 +162,7 @@ async fn chat_completions(
     }
     validate_request(&req)?;
 
-    let model_info =
-        ModelService::get(&req.model).ok_or_else(|| ApiError::invalid_request("Invalid model"))?;
+    let model_info = ModelService::resolve_text(&req.model);
     if model_info.is_video {
         let vconf = req.video_config.unwrap_or(VideoConfig {
             aspect_ratio: Some("3:2".to_string()),

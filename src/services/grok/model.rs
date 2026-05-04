@@ -125,8 +125,9 @@ impl ModelService {
         Self::list().into_iter().find(|m| m.model_id == model_id)
     }
 
-    pub fn valid(model_id: &str) -> bool {
-        Self::get(model_id).is_some()
+    pub fn resolve_text(model_id: &str) -> ModelInfo {
+        Self::get(model_id)
+            .unwrap_or_else(|| ModelInfo::new(model_id, model_id, "MODEL_MODE_AUTO", model_id))
     }
 
     pub fn pool_for_model(model_id: &str) -> String {

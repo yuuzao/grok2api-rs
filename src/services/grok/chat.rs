@@ -313,10 +313,7 @@ impl GrokChatService {
                 .and_then(|v| v.to_str().ok())
                 .unwrap_or("<unknown>")
                 .to_string();
-            let body = response
-                .text()
-                .await
-                .unwrap_or_else(|_| String::new());
+            let body = response.text().await.unwrap_or_else(|_| String::new());
             let preview = body_preview(&body, 220);
             if !preview.is_empty() {
                 tracing::warn!(
@@ -339,8 +336,7 @@ impl GrokChatService {
         token: &str,
         request: &ChatRequest,
     ) -> Result<(LineStream, bool, String), ApiError> {
-        let model_info = ModelService::get(&request.model)
-            .ok_or_else(|| ApiError::invalid_request("Unknown model"))?;
+        let model_info = ModelService::resolve_text(&request.model);
         let is_video = model_info.is_video;
         let (message, attachments) = MessageExtractor::extract(&request.messages, is_video)?;
 

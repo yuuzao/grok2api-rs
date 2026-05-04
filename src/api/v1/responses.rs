@@ -167,14 +167,7 @@ async fn responses(
     if !enabled {
         return Err(ApiError::not_found("Endpoint disabled"));
     }
-    let model_info = ModelService::get(&req.model).ok_or_else(|| {
-        ApiError::not_found(format!(
-            "The model `{}` does not exist or you do not have access to it.",
-            req.model
-        ))
-        .with_param("model")
-        .with_code("model_not_found")
-    })?;
+    let model_info = ModelService::resolve_text(&req.model);
     let messages = build_messages(&req)?;
 
     let stream = match req.stream {
