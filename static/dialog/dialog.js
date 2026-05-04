@@ -49,6 +49,38 @@ function applyApiMode() {
   }
 }
 
+function renderModelOptions(models) {
+  const list = byId('model-options');
+  if (!list) return;
+
+  list.innerHTML = '';
+  models.forEach((model) => {
+    if (!model) return;
+    const option = document.createElement('option');
+    option.value = model;
+    list.appendChild(option);
+  });
+}
+
+async function loadModelOptions() {
+  try {
+    const res = await fetch('/v1/models', {
+      headers: buildAuthHeaders(apiKey)
+    });
+    if (!res.ok) return;
+
+    const payload = await res.json();
+    const models = Array.isArray(payload?.data)
+      ? payload.data
+          .map((item) => item?.id)
+          .filter((id) => typeof id === 'string' && id.trim())
+      : [];
+    renderModelOptions([...new Set(models)]);
+  } catch (err) {
+    console.warn('Failed to load model list', err);
+  }
+}
+
 function ensureEmptyState() {
   const container = byId('dialog-messages');
   if (!container) return;
@@ -542,6 +574,7 @@ async function init() {
 
   ensureEmptyState();
   applyApiMode();
+  loadModelOptions();
 
   byId('api-select')?.addEventListener('change', () => {
     applyApiMode();
